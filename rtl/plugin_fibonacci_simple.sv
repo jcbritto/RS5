@@ -121,14 +121,15 @@ module plugin_fibonacci
                     
                     // Para n >= 2, calcular iterativamente
                     if ((n_reg >= 32'd2) && (counter_reg <= n_reg)) begin
-                        // Se chegamos ao índice alvo, armazenar resultado ANTES de atualizar
+                        // Atualizar valores para próxima iteração
+                        fib_a <= fib_b;
+                        fib_b <= next_fib;
+                        
+                        // Se chegamos ao índice alvo, armazenar resultado
                         if (counter_reg == n_reg) begin
                             result_reg <= next_fib;
                         end
                         
-                        // Atualizar valores para próxima iteração
-                        fib_a <= fib_b;
-                        fib_b <= next_fib;
                         counter_reg <= counter_reg + 1;
                     end
                 end

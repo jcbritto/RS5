@@ -67,9 +67,9 @@ _start:
     sw x3, 32(x31)              # Store result at 0x80001020
     
     # === Test 10: FIB_PLUGIN(10) = 55 ===
-    li x5, 10                   # n = 10
+    li x10, 10                  # n = 10 (load into x10)
     li x6, 0                    # unused operand
-    .word 0x000513AB            # FIB_PLUGIN x7, x10, x0 (fib(10)) - different encoding!
+    .word 0x000513AB            # FIB_PLUGIN x7, x10, x0 (fib(10))
     sw x7, 36(x31)              # Store result at 0x80001024
     
     # === Test 11: FIB_PLUGIN(12) = 144 ===
@@ -79,9 +79,9 @@ _start:
     sw x3, 40(x31)              # Store result at 0x80001028
     
     # === Test 12: FIB_PLUGIN(15) = 610 ===
-    li x5, 15                   # n = 15
+    li x15, 15                  # n = 15 (load into x15)
     li x6, 0                    # unused operand
-    .word 0x0007942B            # FIB_PLUGIN x8, x15, x0 (fib(15)) - different encoding!
+    .word 0x0007942B            # FIB_PLUGIN x8, x15, x0 (fib(15))
     sw x8, 44(x31)              # Store result at 0x8000102C
     
     # === Store test parameters for verification ===
