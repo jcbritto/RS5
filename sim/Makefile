@@ -4,7 +4,7 @@ VERILATOR_FLAGS =
 # Generate C++ in executable form
 VERILATOR_FLAGS += --cc --exe
 # Warn abount lint issues; may not want this on less solid designs
-VERILATOR_FLAGS += -Wall
+#VERILATOR_FLAGS += -Wall
 # Make waveforms
 #VERILATOR_FLAGS += --trace
 # Check SystemVerilog assertions

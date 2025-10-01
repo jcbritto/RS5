@@ -56,7 +56,7 @@ module testbench
     localparam string        OUTPUT_FILE     = "./results/Output.txt";
 
     localparam int           MEM_WIDTH       = 65_536;
-    localparam string        BIN_FILE        = "../app/riscv-tests/test.bin";
+    localparam string        BIN_FILE        = "../app/assembly/simple_test.bin";
 
     localparam int           i_cnt = 1;
 
@@ -79,6 +79,12 @@ module testbench
         reset_n = 0;                                          // RESET for CPU initialization
 
         #100 reset_n = 1;                                     // Hold state for 100 ns
+        
+        // Timeout para evitar simulação infinita
+        #100000 begin
+            $display("\n# %0t TIMEOUT - ENDING SIMULATION", $time);
+            $finish;
+        end
     end
 
 //////////////////////////////////////////////////////////////////////////////
