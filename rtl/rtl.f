@@ -27,6 +27,7 @@
 ./mul.sv
 ./plic.sv
 ./plugin_adder.sv
+./plugin_fibonacci.sv
 ./plugin_memory_interface.sv
 ./regbank.sv
 ./retire.sv

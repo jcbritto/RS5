@@ -464,6 +464,51 @@ module execute
     assign hold_plugin = 1'b0;
 
 //////////////////////////////////////////////////////////////////////////////
+// Plugin Fibonacci
+//////////////////////////////////////////////////////////////////////////////
+
+    logic [31:0] fibonacci_result;
+
+    // Plugin fibonacci for FIB_PLUGIN instruction
+    logic fibonacci_enable;
+    logic fibonacci_start;
+    logic fibonacci_busy;
+    logic fibonacci_done;
+    logic fibonacci_started;
+
+    assign fibonacci_enable = (instruction_operation_i == FIB_PLUGIN);
+    
+    // Control start signal (similar to plugin pattern but with hold for multi-cycle)
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            fibonacci_started <= 1'b0;
+        end else if (!stall) begin
+            if (fibonacci_enable && !fibonacci_started) begin
+                fibonacci_started <= 1'b1;
+            end else if (!fibonacci_enable) begin
+                fibonacci_started <= 1'b0;
+            end
+        end
+    end
+    
+    assign fibonacci_start = fibonacci_enable && !fibonacci_started && !stall;
+
+    plugin_fibonacci plugin_fibonacci_inst (
+        .clk         (clk),
+        .reset_n     (reset_n),
+        .start       (fibonacci_start),
+        .operand_a   (rs1_data_i),    // n-th Fibonacci number
+        .operand_b   (rs2_data_i),    // unused
+        .result      (fibonacci_result),
+        .busy        (fibonacci_busy),
+        .done        (fibonacci_done)
+    );
+
+    // Multi-cycle plugin: hold pipeline until done
+    logic hold_fibonacci;
+    assign hold_fibonacci = fibonacci_enable && !fibonacci_done;
+
+//////////////////////////////////////////////////////////////////////////////
 // AES
 //////////////////////////////////////////////////////////////////////////////
 
@@ -721,6 +766,7 @@ module execute
             CZERO_EQZ, CZERO_NEZ:   result = ZICONDEnable        ? result_zicond                        : sum_result;
             SC_W:                   result = (AMOEXT inside {AMO_ZALRSC, AMO_A}) ? {31'h0, lrsc_result} : sum_result;
             ADD_PLUGIN:             result = plugin_result;
+            FIB_PLUGIN:             result = fibonacci_result;
             default:                result = sum_result;
         endcase
     end
@@ -753,7 +799,7 @@ module execute
 // Output Registers
 ////////////////////////////////////////////////////////////////////////////////
 
-    assign hold_o = hold_div || hold_mul || hold_vector || hold_plugin || atomic_hold;
+    assign hold_o = hold_div || hold_mul || hold_vector || hold_plugin || hold_fibonacci || atomic_hold;
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)

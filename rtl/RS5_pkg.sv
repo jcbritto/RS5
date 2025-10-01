@@ -112,7 +112,8 @@ package RS5_pkg;
         AMO_W,
         CZERO_EQZ,
         CZERO_NEZ,
-        ADD_PLUGIN
+        ADD_PLUGIN,
+        FIB_PLUGIN
     } iType_e;
 
     typedef enum logic[1:0] {

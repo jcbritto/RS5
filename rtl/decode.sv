@@ -275,13 +275,23 @@ module decode
 // Custom Instructions Decode
 //////////////////////////////////////////////////////////////////////////////
 
-    iType_e decode_custom;
+    // Custom-0 opcode: 0001011 (0x0B) - ADD_PLUGIN
+    iType_e decode_custom0;
     always_comb begin
-        // Custom-0 opcode: 0001011 (0x0B in 5-bit format)
         // For ADD_PLUGIN: funct7=0000000, funct3=000
         unique case ({instruction_i[31:25], instruction_i[14:12]})
-            10'b0000000000: decode_custom = ADD_PLUGIN;
-            default:        decode_custom = INVALID;
+            10'b0000000000: decode_custom0 = ADD_PLUGIN;
+            default:        decode_custom0 = INVALID;
+        endcase
+    end
+
+    // Custom-1 opcode: 0101011 (0x2B) - FIB_PLUGIN
+    iType_e decode_custom1;
+    always_comb begin
+        // For FIB_PLUGIN: funct7=0000000, funct3=001
+        unique case ({instruction_i[31:25], instruction_i[14:12]})
+            10'b0000000001: decode_custom1 = FIB_PLUGIN;
+            default:        decode_custom1 = INVALID;
         endcase
     end
 
@@ -302,7 +312,8 @@ module decode
             5'b00001: instruction_operation = VEnable ? VLOAD  : INVALID; /* LOAD-FP */
             5'b01001: instruction_operation = VEnable ? VSTORE : INVALID; /* STORE-FP */
             5'b01011: instruction_operation = decode_atomic;
-            5'b00010: instruction_operation = decode_custom;              /* CUSTOM-0 */
+            5'b00010: instruction_operation = decode_custom0;             /* CUSTOM-0 */
+            5'b01010: instruction_operation = decode_custom1;             /* CUSTOM-1 */
             default:  instruction_operation = INVALID;
         endcase
     end
