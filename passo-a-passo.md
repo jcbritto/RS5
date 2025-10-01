@@ -36,3 +36,18 @@ Este arquivo registra cada comando executado, tempo e resultados durante a imple
 
 ### Commit [Step 0]
 **Comando:** git commit inicial com RS5 original + modificações para macOS
+**Resultado:** ✅ Commit 6cf3a65 criado com sucesso
+
+### Passo 3: Implementar plugin_adder.sv
+**Tempo início:** Wed Oct  1 11:25:05 -03 2025
+
+**Comando:** Criar módulo plugin_adder.sv
+**Descrição:** Implementar coprocessador somador com FSM (IDLE, LOAD, EXECUTE, FINISH)
+**Resultado:** ✅ Módulo criado em rtl/plugin_adder.sv com handshake start/busy/done
+**Características:** 
+- FSM de 4 estados para controle de pipeline
+- Latches operandos na entrada (start)
+- Soma combinacional em 32 bits
+- Sinais de controle: busy (indica operação em andamento), done (pulso de conclusão)
+
+**Comando:** Atualizar rtl.f para incluir novo módulo

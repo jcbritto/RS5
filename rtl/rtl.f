@@ -26,6 +26,7 @@
 ./mulNbits.sv
 ./mul.sv
 ./plic.sv
+./plugin_adder.sv
 ./regbank.sv
 ./retire.sv
 ./RS5_pkg.sv
