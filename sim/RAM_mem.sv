@@ -32,7 +32,7 @@ module RAM_mem
     parameter string DEBUG_PATH = "./debug/",
 `endif
     parameter int    MEM_WIDTH  = 65536,
-    parameter string BIN_FILE   = "../app/assembly/test_plus5.bin"
+    parameter string BIN_FILE   = "./test_plus5.bin"
 )
 (
     input  logic                             clk,

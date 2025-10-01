@@ -56,7 +56,7 @@ module testbench
     localparam string        OUTPUT_FILE     = "./results/Output.txt";
 
     localparam int           MEM_WIDTH       = 65_536;
-    localparam string        BIN_FILE        = "../app/assembly/test_multiple_values.bin";
+    localparam string        BIN_FILE        = "./test_debug_c.bin";
 
     localparam int           i_cnt = 1;
 

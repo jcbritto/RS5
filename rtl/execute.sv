@@ -429,24 +429,25 @@ module execute
     logic plugin_start;
     logic plugin_busy;
     logic plugin_done;
-    logic plugin_started;
+    logic plugin_completed;
 
     assign plugin_enable = (instruction_operation_i == ADD_PLUGIN);
     
-    // Start plugin once when instruction arrives and not stalled
+    // For single-cycle plugin: start immediately and complete in same cycle
+    assign plugin_start = plugin_enable && !stall;
+    
+    // Track completion to release hold
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n) begin
-            plugin_started <= 1'b0;
+            plugin_completed <= 1'b0;
         end else if (!stall) begin
-            if (plugin_enable && !plugin_started) begin
-                plugin_started <= 1'b1;
+            if (plugin_enable && plugin_done) begin
+                plugin_completed <= 1'b1;
             end else if (!plugin_enable) begin
-                plugin_started <= 1'b0;
+                plugin_completed <= 1'b0;
             end
         end
     end
-    
-    assign plugin_start = plugin_enable && !plugin_started && !stall;
 
     plugin_adder plugin_adder_inst (
         .clk         (clk),
@@ -459,8 +460,8 @@ module execute
         .done        (plugin_done)
     );
 
-    // Hold pipeline until plugin completes
-    assign hold_plugin = plugin_enable && !plugin_done;
+    // For single-cycle plugin: don't hold pipeline (plugin completes immediately)
+    assign hold_plugin = 1'b0;
 
 //////////////////////////////////////////////////////////////////////////////
 // AES
