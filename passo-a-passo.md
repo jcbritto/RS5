@@ -51,3 +51,30 @@ Este arquivo registra cada comando executado, tempo e resultados durante a imple
 - Sinais de controle: busy (indica operação em andamento), done (pulso de conclusão)
 
 **Comando:** Atualizar rtl.f para incluir novo módulo
+**Resultado:** ✅ Módulo incluído na compilação, teste de build bem-sucedido
+
+### Passo 4: Integrar via memória mapeada
+**Tempo início:** Wed Oct  1 11:25:05 -03 2025
+
+**Comando:** Analisar mapeamento de memória do testbench
+**Resultado:** ✅ Identificada estrutura:
+- 0x00000000-0x1FFFFFFF: RAM
+- 0x20000000-0x2FFFFFFF: RTC  
+- 0x30000000-0x7FFFFFFF: PLIC
+- 0x80000000-0xFFFFFFFF: TB
+**Decisão:** Usar região 0x10000000+ para plugin (antes de RTC, região livre)
+
+**Comando:** Implementar plugin_memory_interface.sv e integrar no testbench
+**Resultado:** ✅ SUCESSO COMPLETO! Plugin funcionando via memória mapeada
+**Evidências:**
+- Teste 1: 5 + 7 = 12 ✓ (operação em ~90ns)
+- Teste 2: 10 + 20 = 30 ✓ (operação em ~60ns)
+- Handshake start/busy/done funcionando
+- Polling por software funcional
+**Tempo final:** Wed Oct  1 11:30:43 -03 2025
+
+**Mapeamento implementado:**
+- 0x10000000: Operand A (write)
+- 0x10000004: Operand B (write)
+- 0x10000008: Result (read)
+- 0x1000000C: Control/Status (bit 0=busy, bit 1=done, write 1=start)

@@ -27,6 +27,7 @@
 ./mul.sv
 ./plic.sv
 ./plugin_adder.sv
+./plugin_memory_interface.sv
 ./regbank.sv
 ./retire.sv
 ./RS5_pkg.sv
