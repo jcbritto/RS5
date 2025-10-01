@@ -98,8 +98,8 @@ module plugin_adder
                     end
                 end
                 LOAD: begin
-                    // Operands are latched, start calculation
-                    result_reg <= op_a_reg + op_b_reg;  // Perform addition
+                    // Operands are latched, start calculation (A + B + 5)
+                    result_reg <= op_a_reg + op_b_reg + 32'd5;  // Perform addition with +5
                     busy_reg   <= 1'b1;
                     done_reg   <= 1'b0;
                 end

@@ -56,7 +56,7 @@ module testbench
     localparam string        OUTPUT_FILE     = "./results/Output.txt";
 
     localparam int           MEM_WIDTH       = 65_536;
-    localparam string        BIN_FILE        = "../app/assembly/plugin_test.bin";
+    localparam string        BIN_FILE        = "../app/assembly/test_multiple_values.bin";
 
     localparam int           i_cnt = 1;
 
@@ -74,6 +74,39 @@ module testbench
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     logic reset_n;
+
+    // Basic debug - count any memory write operation
+    integer write_count = 0;
+    always_ff @(posedge clk) begin
+        if (mem_write_enable != '0) begin
+            write_count <= write_count + 1;
+            $display("# %0t Memory Write %0d: addr=0x%08X, data=0x%08X, enable=0x%X", 
+                     $time, write_count, mem_address, mem_data_write, mem_write_enable);
+        end
+        
+        // Debug ADD_PLUGIN instruction detection
+        if (dut.decoder1.instruction_i[6:0] == 7'b0001011) begin
+            $display("# %0t CUSTOM-0 Instruction: 0x%08X", $time, dut.decoder1.instruction_i);
+        end
+        if (dut.execute1.instruction_operation_i == ADD_PLUGIN) begin
+            $display("# %d ADD_PLUGIN Operation Detected!", $time);
+            $display("# %d   Instruction: 0x%08x", $time, dut.execute1.instruction_i);
+            $display("# %d   rs1=x%0d, rs2=x%0d, rd=x%0d", $time, 
+                     dut.execute1.instruction_i[19:15],
+                     dut.execute1.instruction_i[24:20], 
+                     dut.execute1.instruction_i[11:7]);
+            $display("# %d   op_a_value=0x%08x, op_b_value=0x%08x", $time,
+                     dut.execute1.rs1_data_i,
+                     dut.execute1.rs2_data_i);
+        end
+        
+        // Debug plugin execution in execute stage
+        if (dut.execute1.plugin_enable) begin
+            $display("# %0t Plugin Enable: start=%b, busy=%b, done=%b, op_a=0x%08X, op_b=0x%08X, result=0x%08X", 
+                     $time, dut.execute1.plugin_start, dut.execute1.plugin_busy, dut.execute1.plugin_done,
+                     dut.execute1.rs1_data_i, dut.execute1.rs2_data_i, dut.execute1.plugin_result);
+        end
+    end
 
     initial begin
         reset_n = 0;                                          // RESET for CPU initialization
@@ -335,6 +368,10 @@ module testbench
                 $write(    "%0d\n",mem_data_write);
                 $fwrite(fd,"%0d\n",mem_data_write);
                 $fflush();
+            end
+            // ADD_PLUGIN TEST DEBUG
+            else if ((mem_address >= 32'h00001000 && mem_address < 32'h00001010) && mem_write_enable != '0) begin
+                $display("# %0t ADD_PLUGIN Test: Writing 0x%08X to address 0x%08X", $time, mem_data_write, mem_address);
             end
             // END REG
             if (mem_address == 32'h80000000 && mem_write_enable != '0) begin

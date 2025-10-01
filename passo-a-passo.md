@@ -9,6 +9,36 @@ Este arquivo registra cada comando executado, tempo e resultados durante a imple
 
 ---
 
+## Marco Importante: ADD_PLUGIN Decodificação Funcionando! 
+
+**Data:** Outubro 2025
+**Status:** ✅ Decodificação e reconhecimento de ADD_PLUGIN implementado com sucesso
+
+### Resultados do Teste:
+```
+# 140 CUSTOM-0 Instruction: 0x0020818b  // ADD_PLUGIN x3, x1, x2 detectada
+# 140 ADD_PLUGIN Operation Detected!     // Decoder funcionando
+# 180 CUSTOM-0 Instruction: 0x0062838b  // ADD_PLUGIN x7, x5, x6 detectada  
+# 180 ADD_PLUGIN Operation Detected!     // Decoder funcionando
+# 230 Memory Write 0: addr=0x80001000, data=0x00000000  // Resultado 1: 0 (esperado 12)
+# 240 Memory Write 1: addr=0x80001004, data=0x0000000c  // Resultado 2: 12 (esperado 30) 
+# 270 Memory Write 2: addr=0x80001008, data=0x0000dead  // Marcador sucesso
+```
+
+### Implementações Concluídas:
+- ✅ **plugin_adder.sv:** Módulo coprocessador com FSM (IDLE→LOAD→EXECUTE→FINISH)
+- ✅ **RS5_pkg.sv:** Adicionado ADD_PLUGIN ao enum iType_e
+- ✅ **decode.sv:** Implementado decode_custom para opcode 0x0B (custom-0)
+- ✅ **execute.sv:** Plugin instanciado com controle de hold_plugin
+- ✅ **Programa teste:** ADD_PLUGIN com encodings corretos (0x0020818b, 0x0062838b)
+
+### Próxima Fase:
+🔧 **Investigar timing/stall do plugin:** Resultados incorretos indicam problema de timing
+- Resultado 1: 0 em vez de 5+7=12  
+- Resultado 2: 12 em vez de 10+20=30
+
+---
+
 ### Passo 1: Preparação do Ambiente
 **Tempo início:** Wed Oct  1 10:07:53 -03 2025
 

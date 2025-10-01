@@ -349,6 +349,7 @@ module execute
     logic [31:0] mul_result;
     logic        hold_mul;
     logic        hold_div;
+    logic        hold_plugin;
 
     if (MULEXT != MUL_OFF) begin : gen_zmmul_on
         logic [1:0] signed_mode_mul;
@@ -416,6 +417,50 @@ module execute
         assign div_result       = '0;
         assign rem_result       = '0;
     end
+
+//////////////////////////////////////////////////////////////////////////////
+// Plugin Adder
+//////////////////////////////////////////////////////////////////////////////
+
+    logic [31:0] plugin_result;
+
+    // Plugin adder for ADD_PLUGIN instruction
+    logic plugin_enable;
+    logic plugin_start;
+    logic plugin_busy;
+    logic plugin_done;
+    logic plugin_started;
+
+    assign plugin_enable = (instruction_operation_i == ADD_PLUGIN);
+    
+    // Start plugin once when instruction arrives and not stalled
+    always_ff @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            plugin_started <= 1'b0;
+        end else if (!stall) begin
+            if (plugin_enable && !plugin_started) begin
+                plugin_started <= 1'b1;
+            end else if (!plugin_enable) begin
+                plugin_started <= 1'b0;
+            end
+        end
+    end
+    
+    assign plugin_start = plugin_enable && !plugin_started && !stall;
+
+    plugin_adder plugin_adder_inst (
+        .clk         (clk),
+        .reset_n     (reset_n),
+        .start       (plugin_start),
+        .operand_a   (rs1_data_i),
+        .operand_b   (rs2_data_i),
+        .result      (plugin_result),
+        .busy        (plugin_busy),
+        .done        (plugin_done)
+    );
+
+    // Hold pipeline until plugin completes
+    assign hold_plugin = plugin_enable && !plugin_done;
 
 //////////////////////////////////////////////////////////////////////////////
 // AES
@@ -674,6 +719,7 @@ module execute
             VECTOR, VLOAD, VSTORE:  result = VEnable             ? vector_scalar_result                 : sum_result;
             CZERO_EQZ, CZERO_NEZ:   result = ZICONDEnable        ? result_zicond                        : sum_result;
             SC_W:                   result = (AMOEXT inside {AMO_ZALRSC, AMO_A}) ? {31'h0, lrsc_result} : sum_result;
+            ADD_PLUGIN:             result = plugin_result;
             default:                result = sum_result;
         endcase
     end
@@ -706,7 +752,7 @@ module execute
 // Output Registers
 ////////////////////////////////////////////////////////////////////////////////
 
-    assign hold_o = hold_div || hold_mul || hold_vector || atomic_hold;
+    assign hold_o = hold_div || hold_mul || hold_vector || hold_plugin || atomic_hold;
 
     always_ff @(posedge clk or negedge reset_n) begin
         if (!reset_n)

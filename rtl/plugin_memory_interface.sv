@@ -67,22 +67,18 @@ module plugin_memory_interface
             start_pulse <= 1'b0;  // Default: clear start pulse
             
             if (enable_i && we_i != 4'b0000) begin
-                $display("[%0t] Plugin Write: addr=0x%08x, data=0x%08x", $time, addr_i, data_i);
                 if (sel_opa) begin
                     // Write to operand A
                     operand_a_reg <= data_i;
-                    $display("[%0t] Plugin: Set operand_a = %d", $time, data_i);
                 end
                 else if (sel_opb) begin
                     // Write to operand B
                     operand_b_reg <= data_i;
-                    $display("[%0t] Plugin: Set operand_b = %d", $time, data_i);
                 end
                 else if (sel_ctrl) begin
                     // Write to control register
                     if (data_i[0]) begin  // bit 0 = start
                         start_pulse <= 1'b1;
-                        $display("[%0t] Plugin: Start operation A=%d + B=%d", $time, operand_a_reg, operand_b_reg);
                     end
                 end
             end
@@ -101,12 +97,10 @@ module plugin_memory_interface
             end
             else if (sel_res) begin
                 data_o = plugin_result;
-                $display("[%0t] Plugin: Read result = %d", $time, plugin_result);
             end
             else if (sel_ctrl) begin
                 // Status register: bit 0=busy, bit 1=done
                 data_o = {30'b0, plugin_done, plugin_busy};
-                $display("[%0t] Plugin: Read status = busy:%d done:%d", $time, plugin_busy, plugin_done);
             end
         end
     end

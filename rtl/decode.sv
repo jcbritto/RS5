@@ -271,6 +271,20 @@ module decode
         assign atomic_operation_o = AMONOP;
     end
 
+//////////////////////////////////////////////////////////////////////////////
+// Custom Instructions Decode
+//////////////////////////////////////////////////////////////////////////////
+
+    iType_e decode_custom;
+    always_comb begin
+        // Custom-0 opcode: 0001011 (0x0B in 5-bit format)
+        // For ADD_PLUGIN: funct7=0000000, funct3=000
+        unique case ({instruction_i[31:25], instruction_i[14:12]})
+            10'b0000000000: decode_custom = ADD_PLUGIN;
+            default:        decode_custom = INVALID;
+        endcase
+    end
+
     always_comb begin
         unique case (opcode)
             5'b01101: instruction_operation = LUI;
@@ -288,6 +302,7 @@ module decode
             5'b00001: instruction_operation = VEnable ? VLOAD  : INVALID; /* LOAD-FP */
             5'b01001: instruction_operation = VEnable ? VSTORE : INVALID; /* STORE-FP */
             5'b01011: instruction_operation = decode_atomic;
+            5'b00010: instruction_operation = decode_custom;              /* CUSTOM-0 */
             default:  instruction_operation = INVALID;
         endcase
     end
