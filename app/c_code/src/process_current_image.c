@@ -1,12 +1,12 @@
 /*
  * RS5 Image Processor - Processamento automático via pipeline
- * Gerado automaticamente para imagem 101x101
+ * Gerado automaticamente para imagem 201x251
  */
 
 // Definições da imagem atual
-#define IMAGE_WIDTH  101
-#define IMAGE_HEIGHT 101
-#define TOTAL_PIXELS 10201
+#define IMAGE_WIDTH  201
+#define IMAGE_HEIGHT 251
+#define TOTAL_PIXELS 50451
 
 // Endereços do plugin de pixels - VALIDADOS
 #define PLUGIN_RGB_ADDR   0x10000000  // Entrada RGB: 0xRRGGBBXX

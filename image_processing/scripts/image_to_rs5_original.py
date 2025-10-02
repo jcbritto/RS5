@@ -26,36 +26,10 @@ def convert_image_to_rs5(image_path, output_prefix="test_image_data", max_pixels
         
         print(f"📷 Imagem original: {original_width}x{original_height} ({original_pixels:,} pixels)")
         
-        # Calcular limite de memória RS5
-        # RS5 tem 64KB de RAM. Reservando espaço para código e pilha, 
-        # vamos usar no máximo 40KB para dados de imagem
-        max_memory_bytes = 40 * 1024  # 40KB
-        bytes_per_pixel = 4  # RGBX format
-        max_pixels_memory = max_memory_bytes // bytes_per_pixel
-        
-        if max_pixels is None:
-            max_pixels = max_pixels_memory
-        
-        print(f"🔧 Limite de memória RS5: {max_pixels:,} pixels (~{max_pixels*4/1024:.1f}KB)")
-        
-        # Decidir se precisa redimensionar
-        if original_pixels <= max_pixels:
-            # Usar tamanho original
-            processed_image = image
-            print(f"✅ Usando tamanho original (dentro do limite)")
-        else:
-            # Redimensionar mantendo proporção
-            scale_factor = (max_pixels / original_pixels) ** 0.5
-            new_width = int(original_width * scale_factor)
-            new_height = int(original_height * scale_factor)
-            
-            # Garantir que não ultrapasse o limite
-            while new_width * new_height > max_pixels:
-                new_width -= 1
-                new_height = int(original_height * (new_width / original_width))
-            
-            processed_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            print(f"📐 Imagem redimensionada: {new_width}x{new_height} ({new_width*new_height:,} pixels)")
+
+        # Com 1MB de RAM, processar sempre no tamanho original
+        processed_image = image
+        print(f"✅ Usando tamanho original: {original_width}x{original_height} ({original_pixels:,} pixels)")
         
         # Converter para RGB se necessário
         if processed_image.mode != 'RGB':
