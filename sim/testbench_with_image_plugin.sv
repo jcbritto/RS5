@@ -56,7 +56,7 @@ module testbench
     localparam string        OUTPUT_FILE     = "./results/Output.txt";
 
     localparam int           MEM_WIDTH       = 65_536;
-    localparam string        BIN_FILE        = "./test_pixel_processor.bin";
+    localparam string        BIN_FILE        = "./program.hex";
 
     localparam int           i_cnt = 1;
 
@@ -77,27 +77,11 @@ module testbench
 
     // Basic debug - count any memory write operation
     integer write_count = 0;
-    integer fetch_count = 0;
     always_ff @(posedge clk) begin
-        // Count instruction fetches
-        if (reset_n && instruction_address != 32'h0) begin
-            fetch_count <= fetch_count + 1;
-            if (fetch_count < 10) begin
-                $display("# %0t Fetch %0d: PC=0x%08X, instr=0x%08X", 
-                         $time, fetch_count, instruction_address, instruction);
-            end
-        end
-        
         if (mem_write_enable != '0) begin
             write_count <= write_count + 1;
             $display("# %0t Memory Write %0d: addr=0x%08X, data=0x%08X, enable=0x%X", 
                      $time, write_count, mem_address, mem_data_write, mem_write_enable);
-        end
-        
-        // Debug read operations  
-        if (mem_operation_enable && mem_write_enable == 4'b0000) begin
-            $display("# %0t Read: addr=0x%08X, mem_data_read=0x%08X, enable_plugin=%b, data_plugin=0x%08X", 
-                     $time, mem_address, mem_data_read, enable_plugin, data_plugin);
         end
         
         // Debug ADD_PLUGIN instruction detection
@@ -116,72 +100,25 @@ module testbench
                      dut.execute1.rs2_data_i);
         end
         
-        // Debug plugin activity
-        // Plugin start/done logs (commented out for pixel processor)
-        /*
-        if (plugin_mem_if.plugin_start) begin
-            $display("# %0t Plugin Start: op_a=0x%08X, op_b=0x%08X", $time, 
-                     plugin_mem_if.plugin_operand_a, plugin_mem_if.plugin_operand_b);
+        // Debug plugin execution in execute stage
+        if (dut.execute1.plugin_enable) begin
+            $display("# %0t Plugin Enable: start=%b, busy=%b, done=%b, op_a=0x%08X, op_b=0x%08X, result=0x%08X", 
+                     $time, dut.execute1.plugin_start, dut.execute1.plugin_busy, dut.execute1.plugin_done,
+                     dut.execute1.rs1_data_i, dut.execute1.rs2_data_i, dut.execute1.plugin_result);
         end
-        if (plugin_mem_if.plugin_done) begin
-            $display("# %0t Plugin Done: result=0x%08X, busy=%b", $time, 
-                     plugin_mem_if.plugin_result, plugin_mem_if.plugin_busy);
-        end
-        */
     end
 
     initial begin
         reset_n = 0;                                          // RESET for CPU initialization
-        $display("# %0t RESET START", $time);
 
         #100 reset_n = 1;                                     // Hold state for 100 ns
-        $display("# %0t RESET RELEASE", $time);
-        
-        // Carregar dados da imagem na RAM após reset
-        #200 load_image_data();
         
         // Timeout para evitar simulação infinita
         #500000 begin
             $display("\n# %0t TIMEOUT - ENDING SIMULATION", $time);
-            $display("# Write operations detected: %0d", write_count);
             $finish;
         end
     end
-
-    // Tarefa para carregar dados da imagem na RAM
-    task automatic load_image_data();
-        integer fd, i, result;
-        logic [31:0] data_word;
-        logic [31:0] base_addr = 32'h00001000; // IMAGE_DATA_ADDR
-        
-        $display("# %0t Loading image data into RAM...", $time);
-        
-        fd = $fopen("test_image_data.hex", "r");
-        if (fd == 0) begin
-            $display("# ERROR: Could not open test_image_data.hex");
-            return;
-        end
-        
-        i = 0;
-        while (!$feof(fd)) begin
-            result = $fscanf(fd, "%h", data_word);
-            if (result == 1) begin
-                // Escrever diretamente na RAM
-                RAM_MEM.RAM[base_addr + (i*4)]     = data_word[7:0];
-                RAM_MEM.RAM[base_addr + (i*4) + 1] = data_word[15:8];
-                RAM_MEM.RAM[base_addr + (i*4) + 2] = data_word[23:16];
-                RAM_MEM.RAM[base_addr + (i*4) + 3] = data_word[31:24];
-                
-                if (i < 10) begin
-                    $display("# Image[%0d]: 0x%08X at addr 0x%08X", i, data_word, base_addr + (i*4));
-                end
-                i = i + 1;
-            end
-        end
-        
-        $fclose(fd);
-        $display("# %0t Image data loaded: %0d words", $time, i);
-    endtask
 
 //////////////////////////////////////////////////////////////////////////////
 // TB SIGNALS
@@ -268,16 +205,16 @@ module testbench
     end
 
     always_comb begin
-        if (enable_tb) begin
+        if (enable_tb_r) begin
             mem_data_read = data_tb;
         end
-        else if (enable_rtc) begin
+        else if (enable_rtc_r) begin
             mem_data_read = data_rtc[31:0];
         end
-        else if (enable_plic) begin
+        else if (enable_plic_r) begin
             mem_data_read = data_plic;
         end
-        else if (enable_plugin) begin
+        else if (enable_plugin_r) begin
             mem_data_read = data_plugin;
         end
         else begin
@@ -396,31 +333,58 @@ module testbench
     );
 
 //////////////////////////////////////////////////////////////////////////////
-// PLUGIN
+// PLUGIN - Image Processing
 //////////////////////////////////////////////////////////////////////////////
 
-    plugin_pixel_memory_interface plugin_mem_if(
+    logic [31:0] plugin_mem_addr, plugin_mem_wdata, plugin_mem_rdata;
+    logic plugin_mem_req, plugin_mem_we, plugin_mem_ready;
+
+    plugin_image_memory_interface plugin_mem_if(
         .clk      (clk),
         .reset_n  (reset_n),
         .enable_i (enable_plugin),
         .we_i     (mem_write_enable),
         .addr_i   (mem_address),
         .data_i   (mem_data_write),
-        .data_o   (data_plugin)
-    );
-
-    // Plugin debug logs
-    always_ff @(posedge clk) begin
-        if (enable_plugin && |mem_write_enable) begin
-            $display("# %0d Plugin Write: addr=0x%08x, data=0x%08x", $time(), mem_address, mem_data_write);
-        end
-        if (enable_plugin && !|mem_write_enable) begin
-            $display("# %0d Plugin Read: addr=0x%08x, data=0x%08x", $time(), mem_address, data_plugin);
-        end
+        .data_o   (data_plugin),
         
-        // Debug operation enable
-        if (mem_operation_enable) begin
-            $display("# %0d Operation: addr=0x%08x, write=%b, enable_plugin=%b", $time(), mem_address, |mem_write_enable, enable_plugin);
+        // Plugin memory access interface
+        .mem_req_o    (plugin_mem_req),
+        .mem_we_o     (plugin_mem_we),
+        .mem_addr_o   (plugin_mem_addr),
+        .mem_data_o   (plugin_mem_wdata),
+        .mem_data_i   (plugin_mem_rdata),
+        .mem_ready_i  (plugin_mem_ready)
+    );
+    
+    // Plugin memory access handler
+    // Access main memory through hierarchical reference to RAM_MEM instance
+    assign plugin_mem_ready = 1'b1;  // Always ready for simplicity
+    
+    // Plugin memory read/write logic
+    always_ff @(posedge clk) begin
+        if (plugin_mem_req) begin
+            if (plugin_mem_we) begin
+                // Write to memory (4-byte word)
+                if (plugin_mem_addr < 32'h1000000) begin
+                    // Write 32-bit word to RAM (byte-addressed)
+                    RAM_MEM.RAM[plugin_mem_addr + 0] <= plugin_mem_wdata[7:0];
+                    RAM_MEM.RAM[plugin_mem_addr + 1] <= plugin_mem_wdata[15:8];
+                    RAM_MEM.RAM[plugin_mem_addr + 2] <= plugin_mem_wdata[23:16];
+                    RAM_MEM.RAM[plugin_mem_addr + 3] <= plugin_mem_wdata[31:24];
+                end
+            end else begin
+                // Read from memory (4-byte word)
+                if (plugin_mem_addr < 32'h1000000) begin
+                    // Read 32-bit word from RAM (byte-addressed)
+                    plugin_mem_rdata <= {RAM_MEM.RAM[plugin_mem_addr + 3],
+                                        RAM_MEM.RAM[plugin_mem_addr + 2],
+                                        RAM_MEM.RAM[plugin_mem_addr + 1],
+                                        RAM_MEM.RAM[plugin_mem_addr + 0]};
+                end else begin
+                    plugin_mem_rdata <= 32'h0;
+                end
+            end
         end
     end
 
@@ -428,45 +392,34 @@ module testbench
 // Memory Mapped regs
 //////////////////////////////////////////////////////////////////////////////
     int fd;
-    
     initial begin
         fd = $fopen(OUTPUT_FILE,"w");
     end
 
     always_ff @(posedge clk) begin
         if (enable_tb) begin
-            if (mem_write_enable != '0) begin
-                // Write operations
-                
-                // OUTPUT REG
-                if ((mem_address == 32'h80004000 || mem_address == 32'h80001000)) begin
-                    char <= mem_data_write[7:0];
-                    $write("%c",char);
-                    if (char != 8'h00)
-                        $fwrite(fd,"%c",char);
-                    $fflush();
-                end
-                else if (mem_address == 32'h80002000) begin
-                    $write(    "%0d\n",mem_data_write);
-                    $fwrite(fd,"%0d\n",mem_data_write);
-                    $fflush();
-                end
-                // ADD_PLUGIN TEST DEBUG
-                else if ((mem_address >= 32'h00001000 && mem_address < 32'h00001010)) begin
-                    $display("# %0t ADD_PLUGIN Test: Writing 0x%08X to address 0x%08X", $time, mem_data_write, mem_address);
-                end
-                // END REG
-                if (mem_address == 32'h80000000) begin
-                    $display(    "\n# %0t END OF SIMULATION",$time);
-                    $fdisplay(fd,"\n# %0t END OF SIMULATION",$time);
-                    $finish;
-                end
-                data_tb <= '0;  // Default for write operations
+            // OUTPUT REG
+            if ((mem_address == 32'h80004000 || mem_address == 32'h80001000) && mem_write_enable != '0) begin
+                char <= mem_data_write[7:0];
+                $write("%c",char);
+                if (char != 8'h00)
+                    $fwrite(fd,"%c",char);
+                $fflush();
             end
-            else begin
-                // Read operations - For testbench region, we don't need to store data
-                // Just return 0 for now since stack operations don't need read-back
-                data_tb <= '0;
+            else if (mem_address == 32'h80002000 && mem_write_enable != '0) begin
+                $write(    "%0d\n",mem_data_write);
+                $fwrite(fd,"%0d\n",mem_data_write);
+                $fflush();
+            end
+            // ADD_PLUGIN TEST DEBUG
+            else if ((mem_address >= 32'h00001000 && mem_address < 32'h00001010) && mem_write_enable != '0) begin
+                $display("# %0t ADD_PLUGIN Test: Writing 0x%08X to address 0x%08X", $time, mem_data_write, mem_address);
+            end
+            // END REG
+            if (mem_address == 32'h80000000 && mem_write_enable != '0) begin
+                $display(    "\n# %0t END OF SIMULATION",$time);
+                $fdisplay(fd,"\n# %0t END OF SIMULATION",$time);
+                $finish;
             end
         end
         else begin

@@ -135,41 +135,45 @@ module RAM_mem
     end
 
     /* Read */
-    always_ff @(posedge clk) begin
-        if (enA_i == 1'b1) begin
-            if (weA_i == '0) begin
-                dataA_o[31:24] <= RAM[addrA_i+3];
-                dataA_o[23:16] <= RAM[addrA_i+2];
-                dataA_o[15:8]  <= RAM[addrA_i+1];
-                dataA_o[7:0]   <= RAM[addrA_i];
+    always_comb begin
+        if (enA_i == 1'b1 && weA_i == '0) begin
+            dataA_o[31:24] = RAM[addrA_i+3];
+            dataA_o[23:16] = RAM[addrA_i+2];
+            dataA_o[15:8]  = RAM[addrA_i+1];
+            dataA_o[7:0]   = RAM[addrA_i];
 
-            `ifndef SYNTH
-                if (DEBUG) begin
-                    if (addrA_i != '0) begin
-                        $fwrite(fd_r_a,"[%0d] %h %h %h %h <-- 0x%4h\n",
-                            $time, RAM[addrA_i+3], RAM[addrA_i+2], RAM[addrA_i+1], RAM[addrA_i], addrA_i);
-                    end
+        `ifndef SYNTH
+            if (DEBUG) begin
+                if (addrA_i != '0) begin
+                    $display("[%0d] READ_comb_A: %h %h %h %h <-- 0x%4h",
+                        $time, RAM[addrA_i+3], RAM[addrA_i+2], RAM[addrA_i+1], RAM[addrA_i], addrA_i);
                 end
-            `endif
             end
+        `endif
         end
+        else begin
+            dataA_o = '0;
+        end
+    end
 
-        if (enB_i == 1'b1) begin
-            if (weB_i == '0) begin
-                dataB_o[31:24] <= RAM[addrB_i+3];
-                dataB_o[23:16] <= RAM[addrB_i+2];
-                dataB_o[15:8]  <= RAM[addrB_i+1];
-                dataB_o[7:0]   <= RAM[addrB_i];
+    always_comb begin
+        if (enB_i == 1'b1 && weB_i == '0) begin
+            dataB_o[31:24] = RAM[addrB_i+3];
+            dataB_o[23:16] = RAM[addrB_i+2];
+            dataB_o[15:8]  = RAM[addrB_i+1];
+            dataB_o[7:0]   = RAM[addrB_i];
 
-            `ifndef SYNTH
-                if (DEBUG) begin
-                    if (addrB_i != '0) begin
-                        $fwrite(fd_r_b,"[%0d] %h %h %h %h <-- 0x%4h\n",
-                            $time, RAM[addrB_i+3], RAM[addrB_i+2], RAM[addrB_i+1], RAM[addrB_i], addrB_i);
-                    end
+        `ifndef SYNTH
+            if (DEBUG) begin
+                if (addrB_i != '0) begin
+                    $display("[%0d] read_comb_B: %h %h %h %h <-- 0x%4h",
+                        $time, RAM[addrB_i+3], RAM[addrB_i+2], RAM[addrB_i+1], RAM[addrB_i], addrB_i);
                 end
-            `endif
             end
+        `endif
+        end
+        else begin
+            dataB_o = '0;
         end
     end
 

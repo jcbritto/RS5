@@ -1,6 +1,11 @@
-TARGET = c_code
+TARGET ?= test_add_plugin
 CC = riscv64-elf-gcc
 OBJCOPY = riscv64-elf-objcopy
+
+# Override TARGET with PROGNAME if provided
+ifdef PROGNAME
+TARGET = $(PROGNAME)
+endif
 
 # Flags simplificadas sem newlib
 CFLAGS = -march=rv32im_zicsr -mabi=ilp32 -Os -Wall -nostdlib -nostartfiles
@@ -11,10 +16,10 @@ all: $(TARGET).bin
 $(TARGET).bin: $(TARGET).elf
 	$(OBJCOPY) $< $@ -O binary
 
-$(TARGET).elf: src/test_simple_c.o
-	$(CC) src/test_simple_c.o -o $@ $(LDFLAGS)
+$(TARGET).elf: src/$(TARGET).o
+	$(CC) src/$(TARGET).o -o $@ $(LDFLAGS)
 
-src/test_simple_c.o: src/test_simple_c.c
+src/$(TARGET).o: src/$(TARGET).c
 	$(CC) -c $< -o $@ $(CFLAGS)
 
 clean:
