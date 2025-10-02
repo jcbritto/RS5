@@ -66,6 +66,14 @@ def convert_image_to_rs5(image_path, output_prefix="test_image_data", max_pixels
         
         print(f"📊 Pixels finais: {total_pixels:,} (~{total_pixels*4/1024:.1f}KB)")
         
+        # Salvar imagem redimensionada para comparação
+        import os
+        from pathlib import Path
+        image_name = Path(image_path).stem
+        redimensionada_path = f"imagem_redimensionada/{image_name}_redimensionada_{width}x{height}.png"
+        processed_image.save(redimensionada_path)
+        print(f"🖼️  Imagem redimensionada salva: {redimensionada_path}")
+        
         # Extrair dados RGB
         rgb_data = []
         pixel_data = list(processed_image.getdata())
