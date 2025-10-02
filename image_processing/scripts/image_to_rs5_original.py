@@ -78,7 +78,7 @@ def convert_image_to_rs5(image_path, output_prefix="test_image_data", max_pixels
         print(f"✅ Dados RGB extraídos: {len(rgb_data)} pixels")
         
         # Salvar arquivo binário
-        bin_filename = f"{output_prefix}.bin"
+        bin_filename = f"binarios/{output_prefix}.bin"
         with open(bin_filename, 'wb') as f:
             for pixel_value in rgb_data:
                 f.write(pixel_value.to_bytes(4, byteorder='little'))
@@ -86,7 +86,7 @@ def convert_image_to_rs5(image_path, output_prefix="test_image_data", max_pixels
         print(f"💾 Arquivo binário salvo: {bin_filename}")
         
         # Salvar arquivo de informações
-        info_filename = f"{output_prefix}_info.txt"
+        info_filename = f"temp_files/{output_prefix}_info.txt"
         with open(info_filename, 'w') as f:
             f.write(f"Original: {image_path}\n")
             f.write(f"Dimensions: {width}x{height}\n")

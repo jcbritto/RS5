@@ -183,7 +183,9 @@ int main() {{
             shutil.copy(hex_file, self.sim_dir / "program.hex")
             
             # Converter dados da imagem para hex e copiar
-            cmd = ["python3", str(bin_to_hex_script), "current_image.bin", "current_image.hex"]
+            bin_image_path = self.base_dir / "binarios" / "current_image.bin"
+            hex_image_path = self.base_dir / "binarios" / "current_image.hex"
+            cmd = ["python3", str(bin_to_hex_script), str(bin_image_path), str(hex_image_path)]
             result = subprocess.run(cmd, cwd=self.base_dir,
                                   capture_output=True, text=True)
             
@@ -191,7 +193,7 @@ int main() {{
                 self.log(f"❌ Erro ao converter dados da imagem: {result.stderr}")
                 return False
             
-            shutil.copy("current_image.hex", self.sim_dir / "test_image_data.hex")
+            shutil.copy(hex_image_path, self.sim_dir / "test_image_data.hex")
             
             self.log("✅ Simulação preparada")
             return True
@@ -228,7 +230,8 @@ int main() {{
             # Simular extração de dados (na simulação real seria do log)
             # Por enquanto, aplicar algoritmo (R+G+B)/4 nos dados originais
             
-            with open("current_image.bin", "rb") as f:
+            bin_path = self.base_dir / "binarios" / "current_image.bin"
+            with open(bin_path, "rb") as f:
                 raw_data = f.read()
             
             num_pixels = len(raw_data) // 4
@@ -299,7 +302,8 @@ int main() {{
         
         # 2. Ler informações da imagem convertida
         try:
-            with open("current_image_info.txt", "r") as f:
+            info_path = self.base_dir / "temp_files" / "current_image_info.txt"
+            with open(info_path, "r") as f:
                 info_lines = f.readlines()
             
             # Extrair dimensões
