@@ -1,5 +1,5 @@
 /*
- * RS5 Image Processor - Processamento automático via pipeline
+ * RS5 Image Processor - Processamento manual passo a passo
  * Gerado automaticamente para imagem 201x251
  */
 
